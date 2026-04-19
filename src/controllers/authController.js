@@ -3,17 +3,17 @@ const { comparePassword } = require('../utils/hashPassword');
 const generateToken = require('../utils/generateToken');
 
 const login = async (req, res) => {
-  const { name, password } = req.body;
-  if (!name || !password) {
-    return res.status(400).json({ message: 'Please provide name and password' });
+  const { email, password } = req.body;          // ← email, not name
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Please provide email and password' });
   }
   try {
-    const result = await pool.query('SELECT * FROM team_members WHERE name = $1 AND is_active = true', [name]);
+    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
     if (result.rows.length === 0) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     const user = result.rows[0];
-    const valid = await comparePassword(password, user.password_hash);
+    const valid = await comparePassword(password, user.password);
     if (!valid) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -23,9 +23,9 @@ const login = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      color: user.color,
-      accessLevel: user.access_level,
-      company_id: user.company_id,
+      color: user.role === 'manager' ? '#0f766e' : '#64748b',
+      accessLevel: user.role,
+      company_id: null,
       token,
     });
   } catch (error) {
